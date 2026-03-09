@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Booking Ruang Meeting</title>
     <style>
+#logo-header {
+    height: 45px;          /* Menyesuaikan tinggi logo */
+    width: auto;           /* Lebar menyesuaikan agar tidak gepeng */
+    object-fit: contain;   /* Menjaga proporsi gambar */
+    background-color: white; 
+    padding: 6px 12px;     /* Memberikan ruang di sekitar logo */
+    border-radius: 6px;    /* Membuat sudut latar sedikit membulat */
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1); /* Bayangan tipis agar elegan */
+}
         :root {
             --primary: #2563eb;
             --secondary: #f3f4f6;
@@ -104,9 +113,11 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        .bg-A { background-color: #3b82f6; } /* Ruang A Biru */
-        .bg-B { background-color: #8b5cf6; } /* Ruang B Ungu */
-        .bg-C { background-color: #f59e0b; } /* Ruang C Orange */
+        .bg-A { background-color: #3b82f6; } /* Cycling Room */
+        .bg-B { background-color: #8b5cf6; } /* FootBall Room */
+        .bg-C { background-color: #f59e0b; } /* Running Room */
+        .bg-D { background-color: #f59e0b; } /* Athletic Room */
+        .bg-E { background-color: #f59e0b; } /* BasketBall Room */
 
         /* Bagian Kanan: Jadwal Sidebar */
         .sidebar {
@@ -167,9 +178,11 @@
     </style>
 </head>
 <body>
-
 <header>
-    <h3>📅 E-Booking Meeting</h3>
+    <div style="display: flex; align-items: center; gap: 12px;">
+        <img id="logo-header" src="./logo.png" alt="Logo DBL">
+        <h3>E-Booking Meeting</h3>
+    </div>
     <button class="btn btn-primary" onclick="showAdminLogin()">Admin Login</button>
 </header>
 
@@ -203,9 +216,11 @@
         <div class="form-group">
             <label>Ruangan</label>
             <select id="bRoom">
-                <option value="Ruang A">Ruang A (Kapasitas 10)</option>
-                <option value="Ruang B">Ruang B (Kapasitas 6)</option>
-                <option value="Ruang C">Ruang C (Ballroom)</option>
+                <option value="Ruang A">Cycling Room (Kapasitas 8)</option>
+                <option value="Ruang B">FootBall Room (Kapasitas 9)</option>
+                <option value="Ruang C">Running Room (Kapasitas 3)</option>
+                <option value="Ruang D">Athletic Room (Kapasitas 6)</option>
+                <option value="Ruang E">Basketball Room (Kapasitas 12)</option>
             </select>
         </div>
         <div class="form-group">
