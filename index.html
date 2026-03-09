@@ -5,28 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Booking Ruang Meeting</title>
     <style>
-#logo-header {
-    height: 80px;          /* Menyesuaikan tinggi logo */
-    width: auto;           /* Lebar menyesuaikan agar tidak gepeng */
-    object-fit: contain;   /* Menjaga proporsi gambar */
-    background-color: white; 
-    padding: 6px 12px;     /* Memberikan ruang di sekitar logo */
-    border-radius: 6px;    /* Membuat sudut latar sedikit membulat */
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1); /* Bayangan tipis agar elegan */
-}
         :root {
             --primary: #2563eb;
             --secondary: #f3f4f6;
             --text: #1f2937;
             --danger: #ef4444;
             --success: #10b981;
+            /* Warna khusus ruangan */
+            --room-cycling: #3b82f6;
+            --room-football: #8b5cf6;
+            --room-running: #f59e0b;
+            --room-athletic: #10b981;
+            --room-basketball: #ec4899;
         }
 
-        * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; }
-        
+        #logo-header {
+            height: 60px;
+            width: auto;
+            object-fit: contain;
+            background-color: white; 
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; }
         body { background-color: #e5e7eb; color: var(--text); padding-bottom: 50px; }
 
-        /* Header */
         header {
             background: white;
             padding: 1rem 2rem;
@@ -39,148 +43,58 @@
             z-index: 100;
         }
 
-        .btn {
-            padding: 0.5rem 1rem;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: 0.2s;
-        }
+        .btn { padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s; }
         .btn-primary { background: var(--primary); color: white; }
         .btn-danger { background: var(--danger); color: white; }
         .btn-success { background: var(--success); color: white; }
         
-        /* Layout Utama */
-        .container {
-            max-width: 1200px;
-            margin: 2rem auto;
-            display: flex;
-            gap: 20px;
-            padding: 0 1rem;
-        }
-
-        /* Bagian Kiri: Kalender */
+        .container { max-width: 1200px; margin: 2rem auto; display: flex; gap: 20px; padding: 0 1rem; }
         .main-content { flex: 3; }
         
-        .calendar-controls {
-            background: white;
-            padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 1rem;
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
+        .calendar-controls { background: white; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; display: flex; gap: 10px; align-items: center; }
+        select, input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
 
-        select, input {
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-
-        .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 5px;
-            background: white;
-            padding: 1rem;
-            border-radius: 8px;
-        }
-
-        .day-header { font-weight: bold; text-align: center; padding: 10px; color: #666; }
-        
-        .day-cell {
-            border: 1px solid #eee;
-            min-height: 100px;
-            padding: 5px;
-            cursor: pointer;
-            transition: 0.2s;
-            position: relative;
-        }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; background: white; padding: 1rem; border-radius: 8px; }
+        .day-header { font-weight: bold; text-align: center; padding: 10px; color: #666; background: #f9fafb; }
+        .day-cell { border: 1px solid #eee; min-height: 100px; padding: 5px; cursor: pointer; transition: 0.2s; position: relative; }
         .day-cell:hover { background-color: #f0f9ff; }
         .day-cell.empty { background: #f9fafb; cursor: default; }
         .day-number { font-weight: bold; margin-bottom: 5px; display: block; }
         
-        .badge {
-            display: block;
-            font-size: 0.7rem;
-            padding: 2px 4px;
-            border-radius: 4px;
-            margin-bottom: 2px;
-            color: white;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .bg-A { background-color: #3b82f6; } /* Cycling Room */
-        .bg-B { background-color: #8b5cf6; } /* FootBall Room */
-        .bg-C { background-color: #f59e0b; } /* Running Room */
-        .bg-D { background-color: #f59e0b; } /* Athletic Room */
-        .bg-E { background-color: #f59e0b; } /* BasketBall Room */
-
-        /* Bagian Kanan: Jadwal Sidebar */
-        .sidebar {
-            flex: 1;
-            background: white;
-            padding: 1.5rem;
-            border-radius: 8px;
-            height: fit-content;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
+        .badge { display: block; font-size: 0.7rem; padding: 2px 4px; border-radius: 4px; margin-bottom: 2px; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         
-        .booking-item {
-            border-left: 4px solid var(--primary);
-            padding: 10px;
-            background: var(--secondary);
-            margin-bottom: 10px;
-            border-radius: 0 4px 4px 0;
-        }
+        /* Warna Dinamis Badge */
+        .bg-cycling { background-color: var(--room-cycling); }
+        .bg-football { background-color: var(--room-football); }
+        .bg-running { background-color: var(--room-running); }
+        .bg-athletic { background-color: var(--room-athletic); }
+        .bg-basketball { background-color: var(--room-basketball); }
 
-        /* Modal & Form */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5);
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        .modal-content {
-            background: white;
-            padding: 2rem;
-            border-radius: 8px;
-            width: 90%;
-            max-width: 400px;
-        }
+        .sidebar { flex: 1; background: white; padding: 1.5rem; border-radius: 8px; height: fit-content; max-height: 80vh; overflow-y: auto; }
+        .booking-item { border-left: 4px solid var(--primary); padding: 10px; background: var(--secondary); margin-bottom: 10px; border-radius: 0 4px 4px 0; }
+
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 2rem; border-radius: 8px; width: 90%; max-width: 400px; }
         .form-group { margin-bottom: 1rem; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: 500; }
         .form-group input, .form-group select { width: 100%; }
 
-        /* Admin Panel */
-        #adminPanel { display: none; margin-top: 20px; border-top: 2px solid #eee; paddingTop: 20px; }
         table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         th { background-color: #f3f4f6; }
 
-        /* Mobile Responsive */
         @media (max-width: 768px) {
             .container { flex-direction: column; }
-            .calendar-grid { grid-template-columns: repeat(7, 1fr); font-size: 0.8rem; }
-            .day-cell { min-height: 60px; }
-            .badge { display: none; } /* Sembunyikan detail di kalender HP, lihat di sidebar */
-            .day-cell.has-event::after {
-                content: '•'; color: red; font-size: 1.5rem; position: absolute; bottom: 0; right: 5px;
-            }
+            .badge { display: none; }
+            .day-cell.has-event::after { content: '•'; color: var(--danger); font-size: 1.5rem; position: absolute; bottom: 0; right: 5px; }
         }
     </style>
 </head>
 <body>
+
 <header>
     <div style="display: flex; align-items: center; gap: 12px;">
-        <img id="logo-header" src="./logo.png" alt="Logo DBL">
+        <img id="logo-header" src="./logo.png" alt="Logo">
         <h3>E-Booking Meeting</h3>
     </div>
     <button class="btn btn-primary" onclick="showAdminLogin()">Admin Login</button>
@@ -193,15 +107,13 @@
             <select id="yearSelect" onchange="renderCalendar()"></select>
             <button class="btn btn-success" style="margin-left: auto;" onclick="openBookingModal()">+ Booking Baru</button>
         </div>
-        <div class="calendar-grid" id="calendar">
-            </div>
+        <div class="calendar-grid" id="calendar"></div>
     </div>
 
     <div class="sidebar">
         <h4>Jadwal Terbooking</h4>
-        <p style="font-size: 0.8rem; color: #666; margin-bottom: 1rem;">Bulan ini:</p>
-        <div id="bookingList">
-            </div>
+        <p id="sidebarMonth" style="font-size: 0.8rem; color: #666; margin-bottom: 1rem;">Bulan ini:</p>
+        <div id="bookingList"></div>
     </div>
 </div>
 
@@ -216,11 +128,11 @@
         <div class="form-group">
             <label>Ruangan</label>
             <select id="bRoom">
-                <option value="Cycling Room">Cycling Room (Kapasitas 8)</option>
-                <option value="FootBall Room>FootBall Room (Kapasitas 9)</option>
-                <option value="Running Room">Running Room (Kapasitas 3)</option>
-                <option value="Athletic Room">Athletic Room (Kapasitas 6)</option>
-                <option value="Basketball Room>Basketball Room (Kapasitas 12)</option>
+                <option value="Cycling Room">Cycling Room (Kaps. 8)</option>
+                <option value="FootBall Room">FootBall Room (Kaps. 9)</option>
+                <option value="Running Room">Running Room (Kaps. 3)</option>
+                <option value="Athletic Room">Athletic Room (Kaps. 6)</option>
+                <option value="Basketball Room">Basketball Room (Kaps. 12)</option>
             </select>
         </div>
         <div class="form-group">
@@ -267,13 +179,11 @@
     <div class="modal-content" style="max-width: 800px; width: 95%;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
             <h3>Dashboard Admin GA</h3>
-            <button class="btn btn-danger" onclick="closeModal('adminDashboard')">Logout / Tutup</button>
+            <button class="btn btn-danger" onclick="closeModal('adminDashboard')">Tutup</button>
         </div>
         <hr style="margin: 15px 0;">
-        
-        <button class="btn btn-success" onclick="downloadSpreadsheet()">📥 Download Excel (.csv)</button>
+        <button class="btn btn-success" onclick="downloadSpreadsheet()">📥 Download CSV</button>
         <br><br>
-        
         <div style="overflow-x: auto;">
             <table id="adminTable">
                 <thead>
@@ -292,21 +202,18 @@
 </div>
 
 <script>
-    // --- KONFIGURASI API & WHATSAPP ---
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyGjJn8ohlDqwNGwuVyqrBzwXjD2OBgRH_T1fFp54kvI0V8CgD3qIY7AImQjbNv0gxX/exec'; 
-    const ADMIN_WA = '62881081371012'; // Ganti dengan nomor WA Admin (Gunakan awalan 62)
+    const ADMIN_WA = '62881081371012'; 
 
-    // --- DATA STORE ---
-    let bookings = []; // Sekarang dikosongkan karena akan ambil dari database
+    let bookings = [];
     const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
     const today = new Date();
     let currentMonth = today.getMonth();
     let currentYear = today.getFullYear();
 
-    // --- INITIALIZATION ---
     window.onload = function() {
         initControls();
-        loadBookings(); // Panggil data dari Google Sheets saat web dibuka
+        loadBookings();
     };
 
     function initControls() {
@@ -320,7 +227,7 @@
             mSelect.appendChild(opt);
         });
 
-        for(let y = currentYear - 2; y <= currentYear + 5; y++) {
+        for(let y = currentYear - 1; y <= currentYear + 2; y++) {
             let opt = document.createElement('option');
             opt.value = y; opt.innerText = y;
             if(y === currentYear) opt.selected = true;
@@ -328,22 +235,27 @@
         }
     }
 
-    // --- FETCH DATA DARI GOOGLE SHEETS ---
     async function loadBookings() {
-        document.getElementById('bookingList').innerHTML = '<p>🔄 Memuat data...</p>';
+        const list = document.getElementById('bookingList');
+        list.innerHTML = '<p>🔄 Memuat data...</p>';
         try {
             const response = await fetch(SCRIPT_URL);
-            const data = await response.json();
-            bookings = data;
+            bookings = await response.json();
             renderCalendar();
-            renderSidebar();
         } catch (error) {
-            console.error('Gagal memuat data:', error);
-            document.getElementById('bookingList').innerHTML = '<p style="color:red">Gagal terhubung ke database.</p>';
+            list.innerHTML = '<p style="color:red">Gagal terhubung ke database.</p>';
         }
     }
 
-    // --- CORE LOGIC KALENDER ---
+    function getRoomClass(roomName) {
+        if (roomName.includes('Cycling')) return 'bg-cycling';
+        if (roomName.includes('FootBall')) return 'bg-football';
+        if (roomName.includes('Running')) return 'bg-running';
+        if (roomName.includes('Athletic')) return 'bg-athletic';
+        if (roomName.includes('Basketball')) return 'bg-basketball';
+        return 'bg-A';
+    }
+
     function renderCalendar() {
         currentMonth = parseInt(document.getElementById('monthSelect').value);
         currentYear = parseInt(document.getElementById('yearSelect').value);
@@ -364,7 +276,6 @@
 
         for(let i=1; i<=daysInMonth; i++) {
             let dateStr = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
-            
             let daysBookings = bookings.filter(b => b.date === dateStr);
             daysBookings.sort((a,b) => a.start.localeCompare(b.start));
 
@@ -372,8 +283,7 @@
                 <span class="day-number">${i}</span>`;
             
             daysBookings.forEach(b => {
-                let colorClass = b.room === 'Ruang A' ? 'bg-A' : (b.room === 'Ruang B' ? 'bg-B' : 'bg-C');
-                html += `<span class="badge ${colorClass}">${b.start} ${b.room}</span>`;
+                html += `<span class="badge ${getRoomClass(b.room)}">${b.start} ${b.room}</span>`;
             });
 
             html += `</div>`;
@@ -400,18 +310,15 @@
 
         monthlyBookings.forEach(b => {
             let d = new Date(b.date);
-            let dateFormatted = `${d.getDate()} ${months[d.getMonth()]}`;
             list.innerHTML += `
                 <div class="booking-item">
-                    <strong>${dateFormatted} | ${b.start} - ${b.end}</strong><br>
-                    <span style="color:var(--primary)">${b.room}</span><br>
+                    <strong>${d.getDate()} ${months[d.getMonth()]} | ${b.start} - ${b.end}</strong><br>
+                    <span style="color:var(--primary); font-weight:bold;">${b.room}</span><br>
                     <small>${b.name}</small>
-                </div>
-            `;
+                </div>`;
         });
     }
 
-    // --- BOOKING LOGIC & WHATSAPP ---
     function openBookingModal(dateStr = '') {
         document.getElementById('bookingModal').style.display = 'flex';
         if(dateStr) document.getElementById('bDate').value = dateStr;
@@ -429,10 +336,8 @@
             return;
         }
 
-        // Cek bentrok jadwal secara lokal sebelum dikirim
         let clash = bookings.find(b => 
-            b.date === date && 
-            b.room === room && 
+            b.date === date && b.room === room && 
             ((start >= b.start && start < b.end) || (end > b.start && end <= b.end))
         );
 
@@ -442,117 +347,69 @@
         }
 
         const newBooking = { id: Date.now(), name, room, date, start, end };
-        
-        // Optimistic UI Update (Tampilkan langsung di layar agar terasa cepat)
         bookings.push(newBooking);
         renderCalendar();
         closeModal('bookingModal');
-        document.getElementById('bName').value = '';
-        
-        // Kirim ke Google Sheets di latar belakang
+
         try {
             await fetch(SCRIPT_URL, {
                 method: 'POST',
-                // Menggunakan text/plain untuk menghindari error CORS di Google Script
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify({ action: "save", booking: newBooking })
             });
-        } catch (error) {
-            console.error("Gagal menyimpan ke database", error);
-        }
+        } catch (e) { console.error(e); }
 
-        // --- TRIGGER WHATSAPP NOTIFIKASI ---
-        const waText = `Halo Admin GA,%0A%0ASaya telah melakukan booking ruangan dengan detail berikut:%0A%0A*Nama:* ${name}%0A*Ruangan:* ${room}%0A*Tanggal:* ${date}%0A*Waktu:* ${start} - ${end}%0A%0AMohon konfirmasinya. Terima kasih!`;
-        const waUrl = `https://wa.me/${ADMIN_WA}?text=${waText}`;
-        
-        alert("Booking tersimpan! Anda akan diarahkan ke WhatsApp untuk konfirmasi ke Admin.");
-        window.open(waUrl, '_blank'); // Membuka tab baru ke WhatsApp Web/App
+        const waText = `Halo Admin GA,%0A%0ASaya booking ruangan:%0A*Nama:* ${name}%0A*Ruangan:* ${room}%0A*Waktu:* ${date}, ${start}-${end}`;
+        window.open(`https://wa.me/${ADMIN_WA}?text=${waText}`, '_blank');
     }
 
-    // --- ADMIN LOGIC ---
-    function showAdminLogin() {
-        document.getElementById('adminModal').style.display = 'flex';
-    }
-
+    function showAdminLogin() { document.getElementById('adminModal').style.display = 'flex'; }
+    
     function processAdminLogin() {
-        const u = document.getElementById('admUser').value;
-        const p = document.getElementById('admPass').value;
-
-        if(u === 'Admin' && p === 'AdminGA') {
+        if(document.getElementById('admUser').value === 'Admin' && document.getElementById('admPass').value === 'AdminGA') {
             closeModal('adminModal');
-            openAdminDashboard();
-        } else {
-            alert("Username atau Password Salah!");
-        }
-    }
-
-    function openAdminDashboard() {
-        document.getElementById('adminDashboard').style.display = 'flex';
-        renderAdminTable();
+            document.getElementById('adminDashboard').style.display = 'flex';
+            renderAdminTable();
+        } else { alert("Login Salah!"); }
     }
 
     function renderAdminTable() {
         const tbody = document.querySelector('#adminTable tbody');
         tbody.innerHTML = '';
-        
-        let sortedBookings = [...bookings].sort((a,b) => new Date(b.date) - new Date(a.date));
-
-        sortedBookings.forEach(b => {
-            tbody.innerHTML += `
-                <tr>
-                    <td>${b.date}</td>
-                    <td>${b.start} - ${b.end}</td>
-                    <td>${b.room}</td>
-                    <td>${b.name}</td>
-                    <td><button class="btn btn-danger" onclick="deleteBooking(${b.id})">Hapus</button></td>
-                </tr>
-            `;
+        [...bookings].sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(b => {
+            tbody.innerHTML += `<tr>
+                <td>${b.date}</td>
+                <td>${b.start}-${b.end}</td>
+                <td>${b.room}</td>
+                <td>${b.name}</td>
+                <td><button class="btn btn-danger" onclick="deleteBooking(${b.id})">Hapus</button></td>
+            </tr>`;
         });
     }
 
     async function deleteBooking(id) {
-        if(confirm("Yakin hapus jadwal ini dari database?")) {
-            // 1. Optimistic UI Update (Hapus dari tampilan secara instan agar web terasa cepat)
+        if(confirm("Hapus data?")) {
             bookings = bookings.filter(b => b.id != id);
             renderAdminTable();
             renderCalendar();
-
-            // 2. Proses penghapusan data di Google Sheets melalui API
-            try {
-                const response = await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action: "delete", id: id })
-                });
-                
-                const result = await response.json();
-                if(result.status !== "success") {
-                    console.error("Gagal menghapus baris di Google Sheet");
-                }
-            } catch (error) {
-                console.error("Terjadi kesalahan jaringan saat menghapus:", error);
-                alert("Gagal menghapus data di server. Memuat ulang data...");
-                loadBookings(); // Memuat ulang (refresh) jika gagal menghapus agar sinkron
-            }
+            await fetch(SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: "delete", id: id })
+            });
         }
     }
 
     function downloadSpreadsheet() {
-        let csvContent = "data:text/csv;charset=utf-8,Tanggal,Jam Mulai,Jam Selesai,Ruangan,Pemesan\n";
-        bookings.forEach(b => {
-            csvContent += `${b.date},${b.start},${b.end},${b.room},${b.name}\n`;
-        });
-        const encodedUri = encodeURI(csvContent);
+        let csv = "Tanggal,Mulai,Selesai,Ruangan,Pemesan\n";
+        bookings.forEach(b => { csv += `${b.date},${b.start},${b.end},${b.room},${b.name}\n`; });
         const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "jadwal_meeting.csv");
-        document.body.appendChild(link);
+        link.href = 'data:text/csv;charset=utf-8,' + encodeURI(csv);
+        link.download = "jadwal.csv";
         link.click();
-        document.body.removeChild(link);
     }
 
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-    window.onclick = function(event) { if (event.target.classList.contains('modal')) event.target.style.display = "none"; }</script>
-
+</script>
 </body>
 </html>
