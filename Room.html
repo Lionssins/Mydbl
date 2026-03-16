@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jadwal Ruangan Hari Ini</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #f3f4f6;
+            --text: #1f2937;
+            /* Warna khusus ruangan */
+            --room-cycling: #3b82f6;
+            --room-football: #8b5cf6;
+            --room-running: #f59e0b;
+            --room-athletic: #10b981;
+            --room-basketball: #ec4899;
+            --room-default: #6b7280;
+        }
+
+        * { 
+            box-sizing: border-box; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            padding: 0; 
+        }
+        
+        body { 
+            background-color: #f3f4f6; 
+            color: var(--text); 
+            padding: 1rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        #logo-header {
+            height: 50px;
+            width: auto;
+            object-fit: contain;
+            margin-bottom: 10px;
+        }
+
+        h2 { color: var(--primary); font-size: 1.5rem; }
+        .date-subtitle { color: #6b7280; font-size: 0.9rem; margin-top: 5px; }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .loading, .empty-state {
+            text-align: center;
+            padding: 2rem;
+            background: white;
+            border-radius: 8px;
+            color: #6b7280;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .booking-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border-left: 5px solid var(--room-default);
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        /* Border Dinamis berdasarkan ruangan */
+        .border-cycling { border-left-color: var(--room-cycling); }
+        .border-football { border-left-color: var(--room-football); }
+        .border-running { border-left-color: var(--room-running); }
+        .border-athletic { border-left-color: var(--room-athletic); }
+        .border-basketball { border-left-color: var(--room-basketball); }
+
+        .time { font-size: 1.2rem; font-weight: bold; color: var(--text); }
+        .room-name { font-size: 1rem; font-weight: 600; }
+        .booker-name { font-size: 0.9rem; color: #4b5563; }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            color: white;
+            font-size: 0.75rem;
+            font-weight: bold;
+            width: fit-content;
+        }
+
+        .bg-cycling { background-color: var(--room-cycling); }
+        .bg-football { background-color: var(--room-football); }
+        .bg-running { background-color: var(--room-running); }
+        .bg-athletic { background-color: var(--room-athletic); }
+        .bg-basketball { background-color: var(--room-basketball); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <img id="logo-header" src="./logo.png" alt="Logo" onerror="this.style.display='none'">
+        <h2>Jadwal Ruangan</h2>
+        <div class="date-subtitle" id="currentDateDisplay">Memuat tanggal...</div>
+    </header>
+
+    <div id="scheduleContainer">
+        <div class="loading">🔄 Memuat jadwal hari ini...</div>
+    </div>
+</div>
+
+<script>
+    // URL Google Script dari sistem utama Anda
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyGjJn8ohlDqwNGwuVyqrBzwXjD2OBgRH_T1fFp54kvI0V8CgD3qIY7AImQjbNv0gxX/exec'; 
+
+    window.onload = function() {
+        displayCurrentDate();
+        loadTodaysBookings();
+    };
+
+    function displayCurrentDate() {
+        const today = new Date();
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        document.getElementById('currentDateDisplay').innerText = today.toLocaleDateString('id-ID', options);
+    }
+
+    // Mendapatkan class warna/border berdasarkan nama ruangan
+    function getRoomClass(roomName, type = 'bg') {
+        const prefix = type === 'border' ? 'border' : 'bg';
+        if (roomName.includes('Cycling')) return `${prefix}-cycling`;
+        if (roomName.includes('FootBall')) return `${prefix}-football`;
+        if (roomName.includes('Running')) return `${prefix}-running`;
+        if (roomName.includes('Athletic')) return `${prefix}-athletic`;
+        if (roomName.includes('Basketball')) return `${prefix}-basketball`;
+        return '';
+    }
+
+    async function loadTodaysBookings() {
+        const container = document.getElementById('scheduleContainer');
+        
+        try {
+            const response = await fetch(SCRIPT_URL);
+            const allBookings = await response.json();
+            
+            // Dapatkan tanggal hari ini dalam format YYYY-MM-DD sesuai data Anda
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const todayStr = `${year}-${month}-${day}`;
+
+            // Filter hanya jadwal hari ini
+            const todaysBookings = allBookings.filter(b => b.date === todayStr);
+            
+            // Urutkan berdasarkan jam mulai
+            todaysBookings.sort((a, b) => a.start.localeCompare(b.start));
+
+            renderBookings(todaysBookings);
+        } catch (error) {
+            container.innerHTML = '<div class="empty-state" style="color:red">❌ Gagal terhubung ke database. Silakan muat ulang halaman.</div>';
+        }
+    }
+
+    function renderBookings(bookings) {
+        const container = document.getElementById('scheduleContainer');
+        container.innerHTML = ''; // Bersihkan loading state
+
+        if (bookings.length === 0) {
+            container.innerHTML = '<div class="empty-state">✅ Tidak ada ruangan yang dipakai hari ini. Semua ruangan tersedia.</div>';
+            return;
+        }
+
+        bookings.forEach(b => {
+            const card = document.createElement('div');
+            card.className = `booking-card ${getRoomClass(b.room, 'border')}`;
+            
+            card.innerHTML = `
+                <div class="time">🕒 ${b.start} - ${b.end}</div>
+                <div class="room-name">
+                    <span class="badge ${getRoomClass(b.room, 'bg')}">${b.room}</span>
+                </div>
+                <div class="booker-name">👤 Pemesan: <strong>${b.name}</strong></div>
+            `;
+            container.appendChild(card);
+        });
+    }
+</script>
+
+</body>
+</html>
