@@ -264,23 +264,13 @@
         const list = document.getElementById('bookingList');
         list.innerHTML = '<p>🔄 Memuat data...</p>';
         try {
-            const response = await fetch(SCRIPT_URL);
-            const data = await response.json();
-            
-            // Logika baru: Cek apakah Google Script mengirim JSON format lama (array) atau format baru (object)
-            if (Array.isArray(data)) {
-                bookings = data;
-                // Fallback jika Google Script belum diperbarui
-                renderOptions('bName', ['-- Harap perbarui Google Script --']);
-                renderOptions('bDivisi', ['-- Harap perbarui Google Script --']);
-            } else {
-                bookings = data.bookings || [];
-                renderOptions('bName', data.names || []);
-                renderOptions('bDivisi', data.divisions || []);
-            }
-            
-            renderCalendar();
-        } catch (error) {
+            await fetch(SCRIPT_URL, {
+                method: 'POST',
+                redirect: 'follow', // <-- Tambahkan ini
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: "save", booking: newBooking })
+            });
+        } catch (e) { console.error(e); }
             list.innerHTML = '<p style="color:red">Gagal terhubung ke database.</p>';
             console.error(error);
         }
