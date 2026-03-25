@@ -135,10 +135,21 @@
     <div class="modal-content">
         <h3>Booking Ruangan</h3>
         <br>
+        
+        <div class="form-group">
+            <label>Divisi</label>
+            <select id="bDivisi">
+                <option value="">-- Memuat Data --</option>
+            </select>
+        </div>
+        
         <div class="form-group">
             <label>Nama Pemesan</label>
-            <input type="text" id="bName" placeholder="Divisi / Nama">
+            <select id="bName">
+                <option value="">-- Memuat Data --</option>
+            </select>
         </div>
+
         <div class="form-group">
             <label>Ruangan</label>
             <select id="bRoom">
@@ -254,11 +265,34 @@
         list.innerHTML = '<p>🔄 Memuat data...</p>';
         try {
             const response = await fetch(SCRIPT_URL);
-            bookings = await response.json();
+            const data = await response.json();
+            
+            // Logika baru: Cek apakah Google Script mengirim JSON format lama (array) atau format baru (object)
+            if (Array.isArray(data)) {
+                bookings = data;
+                // Fallback jika Google Script belum diperbarui
+                renderOptions('bName', ['-- Harap perbarui Google Script --']);
+                renderOptions('bDivisi', ['-- Harap perbarui Google Script --']);
+            } else {
+                bookings = data.bookings || [];
+                renderOptions('bName', data.names || []);
+                renderOptions('bDivisi', data.divisions || []);
+            }
+            
             renderCalendar();
         } catch (error) {
             list.innerHTML = '<p style="color:red">Gagal terhubung ke database.</p>';
+            console.error(error);
         }
+    }
+
+    // Fungsi Render Dropdown
+    function renderOptions(elementId, items) {
+        const select = document.getElementById(elementId);
+        select.innerHTML = `<option value="">-- Pilih --</option>`;
+        items.forEach(item => {
+            if(item) select.innerHTML += `<option value="${item}">${item}</option>`;
+        });
     }
 
     function getRoomClass(roomName) {
@@ -267,7 +301,7 @@
         if (roomName.includes('Running')) return 'bg-running';
         if (roomName.includes('Athletic')) return 'bg-athletic';
         if (roomName.includes('Basketball')) return 'bg-basketball';
-        return 'bg-A'; // Default class if not found
+        return 'bg-A'; 
     }
 
     function renderCalendar() {
@@ -293,7 +327,6 @@
             let daysBookings = bookings.filter(b => b.date === dateStr);
             daysBookings.sort((a,b) => a.start.localeCompare(b.start));
 
-            // PERUBAHAN: Ubah onclick dari openBookingModal menjadi viewDaySchedule
             let html = `<div class="day-cell ${daysBookings.length > 0 ? 'has-event' : ''}" onclick="viewDaySchedule('${dateStr}')">
                 <span class="day-number">${i}</span>`;
             
@@ -307,7 +340,6 @@
         renderSidebar(); 
     }
 
-    // FUNGSI BARU: Untuk melihat jadwal saat tanggal diklik
     function viewDaySchedule(dateStr) {
         const modalTitle = document.getElementById('viewDayTitle');
         const content = document.getElementById('viewDayContent');
@@ -365,25 +397,29 @@
     }
 
     function openBookingModal() {
-        // Form booking sekarang tidak otomatis terisi tanggal
         document.getElementById('bDate').value = ''; 
         document.getElementById('bName').value = '';
+        document.getElementById('bDivisi').value = '';
         document.getElementById('bStart').value = '';
         document.getElementById('bEnd').value = '';
         document.getElementById('bookingModal').style.display = 'flex';
     }
 
     async function saveBooking() {
-        const name = document.getElementById('bName').value;
+        const namaInput = document.getElementById('bName').value;
+        const divisiInput = document.getElementById('bDivisi').value;
         const room = document.getElementById('bRoom').value;
         const date = document.getElementById('bDate').value;
         const start = document.getElementById('bStart').value;
         const end = document.getElementById('bEnd').value;
 
-        if(!name || !date || !start || !end) {
-            alert("Mohon lengkapi semua data!");
+        if(!namaInput || !divisiInput || !date || !start || !end) {
+            alert("Mohon lengkapi semua data (Nama, Divisi, Tanggal, Jam)!");
             return;
         }
+
+        // Gabungkan Nama dan Divisi untuk dikirim ke database existing
+        const name = `${namaInput} (${divisiInput})`;
 
         let clash = bookings.find(b => 
             b.date === date && b.room === room && 
@@ -408,7 +444,7 @@
             });
         } catch (e) { console.error(e); }
 
-        const waText = `Halo Admin GA,%0A%0ASaya booking ruangan:%0A*Nama:* ${name}%0A*Ruangan:* ${room}%0A*Waktu:* ${date}, ${start}-${end}`;
+        const waText = `Halo Admin GA,%0A%0ASaya booking ruangan:%0A*Nama:* ${namaInput}%0A*Divisi:* ${divisiInput}%0A*Ruangan:* ${room}%0A*Waktu:* ${date}, ${start}-${end}`;
         window.open(`https://wa.me/${ADMIN_WA}?text=${waText}`, '_blank');
     }
 
@@ -460,7 +496,6 @@
 
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
     
-    // Tutup modal jika mengklik area gelap di luar form
     window.onclick = function(event) {
         if (event.target.classList.contains('modal')) {
             event.target.style.display = "none";
