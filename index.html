@@ -123,8 +123,7 @@
     <div class="modal-content">
         <h3 id="viewDayTitle">Jadwal Ruangan</h3>
         <hr style="margin: 10px 0;">
-        <div id="viewDayContent">
-            </div>
+        <div id="viewDayContent"></div>
         <div style="text-align: right; margin-top: 20px;">
             <button class="btn btn-primary" onclick="closeModal('viewDayModal')">Tutup</button>
         </div>
@@ -227,6 +226,7 @@
 </div>
 
 <script>
+    // ⚠️ PASTIKAN SCRIPT_URL INI ADALAH URL DEPLOYMENT VERSI BARU ANDA ⚠️
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyGjJn8ohlDqwNGwuVyqrBzwXjD2OBgRH_T1fFp54kvI0V8CgD3qIY7AImQjbNv0gxX/exec'; 
     const ADMIN_WA = '62881081371012'; 
 
@@ -264,19 +264,26 @@
         const list = document.getElementById('bookingList');
         list.innerHTML = '<p>🔄 Memuat data...</p>';
         try {
-            await fetch(SCRIPT_URL, {
-                method: 'POST',
-                redirect: 'follow', // <-- Tambahkan ini
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ action: "save", booking: newBooking })
-            });
-        } catch (e) { console.error(e); }
+            const response = await fetch(SCRIPT_URL);
+            const data = await response.json();
+            
+            if (Array.isArray(data)) {
+                bookings = data;
+                renderOptions('bName', ['-- Harap perbarui Google Script --']);
+                renderOptions('bDivisi', ['-- Harap perbarui Google Script --']);
+            } else {
+                bookings = data.bookings || [];
+                renderOptions('bName', data.names || []);
+                renderOptions('bDivisi', data.divisions || []);
+            }
+            
+            renderCalendar();
+        } catch (error) {
             list.innerHTML = '<p style="color:red">Gagal terhubung ke database.</p>';
             console.error(error);
         }
     }
 
-    // Fungsi Render Dropdown
     function renderOptions(elementId, items) {
         const select = document.getElementById(elementId);
         select.innerHTML = `<option value="">-- Pilih --</option>`;
@@ -408,7 +415,6 @@
             return;
         }
 
-        // Gabungkan Nama dan Divisi untuk dikirim ke database existing
         const name = `${namaInput} (${divisiInput})`;
 
         let clash = bookings.find(b => 
@@ -422,17 +428,21 @@
         }
 
         const newBooking = { id: Date.now(), name, room, date, start, end };
+        
+        // Simpan sementara di UI
         bookings.push(newBooking);
         renderCalendar();
         closeModal('bookingModal');
 
         try {
+            // Proses simpan permanen ke database
             await fetch(SCRIPT_URL, {
                 method: 'POST',
+                redirect: 'follow', // BARIS PENTING AGAR DATA TERSIMPAN
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify({ action: "save", booking: newBooking })
             });
-        } catch (e) { console.error(e); }
+        } catch (e) { console.error("Gagal simpan ke database:", e); }
 
         const waText = `Halo Admin GA,%0A%0ASaya booking ruangan:%0A*Nama:* ${namaInput}%0A*Divisi:* ${divisiInput}%0A*Ruangan:* ${room}%0A*Waktu:* ${date}, ${start}-${end}`;
         window.open(`https://wa.me/${ADMIN_WA}?text=${waText}`, '_blank');
@@ -464,14 +474,20 @@
 
     async function deleteBooking(id) {
         if(confirm("Hapus data?")) {
+            // Hapus sementara di UI
             bookings = bookings.filter(b => b.id != id);
             renderAdminTable();
             renderCalendar();
-            await fetch(SCRIPT_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ action: "delete", id: id })
-            });
+            
+            try {
+                // Proses hapus permanen di database
+                await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    redirect: 'follow', // BARIS PENTING AGAR DATA TERHAPUS
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: "delete", id: id })
+                });
+            } catch (e) { console.error("Gagal hapus di database:", e); }
         }
     }
 
