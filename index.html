@@ -56,12 +56,34 @@
 
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; background: white; padding: 1rem; border-radius: 8px; }
         .day-header { font-weight: bold; text-align: center; padding: 10px; color: #666; background: #f9fafb; }
-        .day-cell { border: 1px solid #eee; min-height: 100px; padding: 5px; cursor: pointer; transition: 0.2s; position: relative; }
+        
+        /* MODIFIKASI: Tinggi day-cell di-set fix agar tidak berubah saat ada pesanan */
+        .day-cell { 
+            border: 1px solid #eee; 
+            height: 120px; /* Tinggi statis/fix */
+            padding: 5px; 
+            cursor: pointer; 
+            transition: 0.2s; 
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Mencegah elemen keluar dari kotak */
+        }
         .day-cell:hover { background-color: #f0f9ff; }
         .day-cell.empty { background: #f9fafb; cursor: default; }
         .day-cell:hover.empty { background-color: #f9fafb; }
-        .day-number { font-weight: bold; margin-bottom: 5px; display: block; }
+        .day-number { font-weight: bold; margin-bottom: 5px; display: block; flex-shrink: 0; }
         
+        /* MODIFIKASI: Menambahkan area khusus badge agar bisa di-scroll jika penuh */
+        .day-badges-container {
+            flex: 1;
+            overflow-y: auto; /* Memungkinkan scroll vertikal */
+            scrollbar-width: none; /* Firefox: hilangkan scrollbar */
+        }
+        .day-badges-container::-webkit-scrollbar {
+            display: none; /* Chrome/Safari/Edge: hilangkan scrollbar visual */
+        }
+
         .badge { display: block; font-size: 0.75rem; padding: 4px 6px; border-radius: 4px; margin-bottom: 3px; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .badge-inline { display: inline-block; padding: 4px 8px; font-size: 0.8rem; }
         
@@ -88,7 +110,9 @@
         @media (max-width: 768px) {
             .container { flex-direction: column; }
             .badge { display: none; }
+            /* Memunculkan titik jika ada event di mobile */
             .day-cell.has-event::after { content: '•'; color: var(--danger); font-size: 1.5rem; position: absolute; bottom: 0; right: 5px; }
+            .day-cell { height: 80px; } /* Di mobile ukuran lebih kecil */
         }
     </style>
 </head>
@@ -291,28 +315,23 @@
                 renderOptions('bDivisi', uniqueDivisions);
             }
 
-            // PERBAIKAN: Normalisasi format Tanggal dan Jam dari Google Sheet
             bookings = rawBookings.map(b => {
                 let formattedDate = b.date;
                 let formattedStart = b.start;
                 let formattedEnd = b.end;
 
-                // Perbaiki Format Tanggal menjadi YYYY-MM-DD
                 if (typeof formattedDate === 'string' && formattedDate.includes('T')) {
                     let d = new Date(formattedDate);
                     formattedDate = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
                 }
 
-                // Perbaiki Format Waktu Mulai (Start) menjadi HH:mm
                 if (typeof formattedStart === 'string' && formattedStart.includes('T')) {
                     let d = new Date(formattedStart);
                     formattedStart = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
                 } else if (typeof formattedStart === 'string' && formattedStart.length <= 5 && !formattedStart.includes('T')) {
-                    // Jika dari sheet formatnya misal "9:00", paksa jadi "09:00"
                     if(formattedStart.length === 4) formattedStart = '0' + formattedStart;
                 }
 
-                // Perbaiki Format Waktu Selesai (End) menjadi HH:mm
                 if (typeof formattedEnd === 'string' && formattedEnd.includes('T')) {
                     let d = new Date(formattedEnd);
                     formattedEnd = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
@@ -390,18 +409,18 @@
             let daysBookings = bookings.filter(b => b.date === dateStr);
             daysBookings.sort((a,b) => a.start.localeCompare(b.start));
 
-            let html = `<div class="day-cell ${daysBookings.length > 0 ? 'has-event' : ''}" onclick="viewDaySchedule('${dateStr}')">
-                <span class="day-number">${i}</span>`;
+            // MODIFIKASI: Menambahkan div .day-badges-container di dalam day-cell
+            let html = `
+            <div class="day-cell ${daysBookings.length > 0 ? 'has-event' : ''}" onclick="viewDaySchedule('${dateStr}')">
+                <span class="day-number">${i}</span>
+                <div class="day-badges-container">`;
             
             daysBookings.forEach(b => {
-                // PERBAIKAN: Memunculkan Nama di dalam kalender
-                // Pisahkan nama untuk mengambil nama depannya saja (sebelum tanda kurung Divisi)
                 let shortName = b.name.includes('(') ? b.name.split(' (')[0] : b.name;
-                
                 html += `<span class="badge ${getRoomClass(b.room)}" title="${b.room} - ${b.name}">🕒 ${b.start} | 👤 ${shortName}</span>`;
             });
 
-            html += `</div>`;
+            html += `</div></div>`;
             calendar.innerHTML += html;
         }
         renderSidebar(); 
@@ -411,7 +430,6 @@
         const modalTitle = document.getElementById('viewDayTitle');
         const content = document.getElementById('viewDayContent');
         
-        // Membaca tanggal menggunakan data yang dipecah agar menghindari bug Timezone 
         const parts = dateStr.split('-');
         const dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
         const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
@@ -456,7 +474,6 @@
         }
 
         monthlyBookings.forEach(b => {
-            // PERBAIKAN: Membaca tanggal dan bulan secara langsung dari text menghindari error tulisan NaN
             const [year, month, day] = b.date.split('-');
             
             list.innerHTML += `
