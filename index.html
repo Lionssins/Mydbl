@@ -62,7 +62,7 @@
         .day-cell:hover.empty { background-color: #f9fafb; }
         .day-number { font-weight: bold; margin-bottom: 5px; display: block; }
         
-        .badge { display: block; font-size: 0.7rem; padding: 2px 4px; border-radius: 4px; margin-bottom: 2px; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .badge { display: block; font-size: 0.75rem; padding: 4px 6px; border-radius: 4px; margin-bottom: 3px; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .badge-inline { display: inline-block; padding: 4px 8px; font-size: 0.8rem; }
         
         /* Warna Dinamis Badge */
@@ -231,8 +231,6 @@
     const ADMIN_WA = '62881081371012'; 
 
     let bookings = [];
-    
-    // Variabel baru untuk menyimpan daftar karyawan secara terstruktur
     let employeesData = []; 
 
     const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
@@ -271,31 +269,59 @@
             const response = await fetch(SCRIPT_URL);
             const data = await response.json();
             
+            let rawBookings = [];
+
             if (Array.isArray(data)) {
-                bookings = data;
+                rawBookings = data;
                 renderOptions('bDivisi', ['-- Harap perbarui Google Script --']);
             } else {
-                bookings = data.bookings || [];
+                rawBookings = data.bookings || [];
                 
-                // Susun data agar Divisi dan Nama saling terhubung (berdasarkan urutan baris di Google Sheet)
                 employeesData = [];
                 const rawNames = data.names || [];
                 const rawDivisions = data.divisions || [];
                 
-                // Menggabungkan array berdasar urutan baris
                 for(let i = 0; i < Math.max(rawNames.length, rawDivisions.length); i++) {
                     if(rawNames[i] && rawDivisions[i]) {
-                        employeesData.push({
-                            name: rawNames[i],
-                            division: rawDivisions[i]
-                        });
+                        employeesData.push({ name: rawNames[i], division: rawDivisions[i] });
                     }
                 }
                 
-                // Ambil Divisi yang Unik (agar tidak ada divisi ganda di dropdown)
                 const uniqueDivisions = [...new Set(employeesData.map(e => e.division))];
                 renderOptions('bDivisi', uniqueDivisions);
             }
+
+            // PERBAIKAN: Normalisasi format Tanggal dan Jam dari Google Sheet
+            bookings = rawBookings.map(b => {
+                let formattedDate = b.date;
+                let formattedStart = b.start;
+                let formattedEnd = b.end;
+
+                // Perbaiki Format Tanggal menjadi YYYY-MM-DD
+                if (typeof formattedDate === 'string' && formattedDate.includes('T')) {
+                    let d = new Date(formattedDate);
+                    formattedDate = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+                }
+
+                // Perbaiki Format Waktu Mulai (Start) menjadi HH:mm
+                if (typeof formattedStart === 'string' && formattedStart.includes('T')) {
+                    let d = new Date(formattedStart);
+                    formattedStart = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+                } else if (typeof formattedStart === 'string' && formattedStart.length <= 5 && !formattedStart.includes('T')) {
+                    // Jika dari sheet formatnya misal "9:00", paksa jadi "09:00"
+                    if(formattedStart.length === 4) formattedStart = '0' + formattedStart;
+                }
+
+                // Perbaiki Format Waktu Selesai (End) menjadi HH:mm
+                if (typeof formattedEnd === 'string' && formattedEnd.includes('T')) {
+                    let d = new Date(formattedEnd);
+                    formattedEnd = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+                } else if (typeof formattedEnd === 'string' && formattedEnd.length <= 5 && !formattedEnd.includes('T')) {
+                    if(formattedEnd.length === 4) formattedEnd = '0' + formattedEnd;
+                }
+
+                return { ...b, date: formattedDate, start: formattedStart, end: formattedEnd };
+            });
             
             renderCalendar();
         } catch (error) {
@@ -312,21 +338,17 @@
         });
     }
 
-    // FUNGSI BARU: Untuk memfilter dropdown Nama berdasarkan Divisi yang dipilih
     function filterNamesByDivision() {
         const selectedDivision = document.getElementById('bDivisi').value;
         const nameDropdown = document.getElementById('bName');
         
-        // Reset dropdown nama
         nameDropdown.innerHTML = `<option value="">-- Pilih Nama --</option>`;
         
         if(selectedDivision) {
-            // Filter nama yang divisinya cocok dengan yang dipilih
             const filteredNames = employeesData
                                   .filter(e => e.division === selectedDivision)
                                   .map(e => e.name);
             
-            // Masukkan nama yang sudah difilter ke dropdown
             filteredNames.forEach(name => {
                 nameDropdown.innerHTML += `<option value="${name}">${name}</option>`;
             });
@@ -364,6 +386,7 @@
 
         for(let i=1; i<=daysInMonth; i++) {
             let dateStr = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+            
             let daysBookings = bookings.filter(b => b.date === dateStr);
             daysBookings.sort((a,b) => a.start.localeCompare(b.start));
 
@@ -371,7 +394,11 @@
                 <span class="day-number">${i}</span>`;
             
             daysBookings.forEach(b => {
-                html += `<span class="badge ${getRoomClass(b.room)}">${b.start} ${b.room}</span>`;
+                // PERBAIKAN: Memunculkan Nama di dalam kalender
+                // Pisahkan nama untuk mengambil nama depannya saja (sebelum tanda kurung Divisi)
+                let shortName = b.name.includes('(') ? b.name.split(' (')[0] : b.name;
+                
+                html += `<span class="badge ${getRoomClass(b.room)}" title="${b.room} - ${b.name}">🕒 ${b.start} | 👤 ${shortName}</span>`;
             });
 
             html += `</div>`;
@@ -384,7 +411,9 @@
         const modalTitle = document.getElementById('viewDayTitle');
         const content = document.getElementById('viewDayContent');
         
-        const dateObj = new Date(dateStr);
+        // Membaca tanggal menggunakan data yang dipecah agar menghindari bug Timezone 
+        const parts = dateStr.split('-');
+        const dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
         const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
         modalTitle.innerText = `Jadwal: ${dateObj.toLocaleDateString('id-ID', options)}`;
         
@@ -414,11 +443,12 @@
         list.innerHTML = '';
         
         let monthlyBookings = bookings.filter(b => {
-            let d = new Date(b.date);
-            return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+            if(!b.date) return false;
+            const parts = b.date.split('-');
+            return parseInt(parts[1]) - 1 === currentMonth && parseInt(parts[0]) === currentYear;
         });
 
-        monthlyBookings.sort((a,b) => new Date(a.date) - new Date(b.date));
+        monthlyBookings.sort((a,b) => a.date.localeCompare(b.date));
 
         if(monthlyBookings.length === 0) {
             list.innerHTML = '<p>Tidak ada jadwal bulan ini.</p>';
@@ -426,10 +456,12 @@
         }
 
         monthlyBookings.forEach(b => {
-            let d = new Date(b.date);
+            // PERBAIKAN: Membaca tanggal dan bulan secara langsung dari text menghindari error tulisan NaN
+            const [year, month, day] = b.date.split('-');
+            
             list.innerHTML += `
                 <div class="booking-item">
-                    <strong>${d.getDate()} ${months[d.getMonth()]} | ${b.start} - ${b.end}</strong><br>
+                    <strong>${parseInt(day)} ${months[parseInt(month) - 1]} | ${b.start} - ${b.end}</strong><br>
                     <span style="color:var(--primary); font-weight:bold;">${b.room}</span><br>
                     <small>${b.name}</small>
                 </div>`;
@@ -440,7 +472,6 @@
         document.getElementById('bDate').value = ''; 
         document.getElementById('bDivisi').value = '';
         
-        // Reset dropdown nama saat membuka form baru
         const nameDropdown = document.getElementById('bName');
         nameDropdown.innerHTML = `<option value="">-- Pilih Divisi Dulu --</option>`;
         
@@ -476,13 +507,11 @@
 
         const newBooking = { id: Date.now(), name, room, date, start, end };
         
-        // Simpan sementara di UI
         bookings.push(newBooking);
         renderCalendar();
         closeModal('bookingModal');
 
         try {
-            // Proses simpan permanen ke database
             await fetch(SCRIPT_URL, {
                 method: 'POST',
                 redirect: 'follow', 
@@ -508,7 +537,7 @@
     function renderAdminTable() {
         const tbody = document.querySelector('#adminTable tbody');
         tbody.innerHTML = '';
-        [...bookings].sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(b => {
+        [...bookings].sort((a,b) => b.date.localeCompare(a.date)).forEach(b => {
             tbody.innerHTML += `<tr>
                 <td>${b.date}</td>
                 <td>${b.start}-${b.end}</td>
@@ -521,13 +550,11 @@
 
     async function deleteBooking(id) {
         if(confirm("Hapus data?")) {
-            // Hapus sementara di UI
             bookings = bookings.filter(b => b.id != id);
             renderAdminTable();
             renderCalendar();
             
             try {
-                // Proses hapus permanen di database
                 await fetch(SCRIPT_URL, {
                     method: 'POST',
                     redirect: 'follow', 
