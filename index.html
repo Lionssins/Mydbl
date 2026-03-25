@@ -137,7 +137,7 @@
         
         <div class="form-group">
             <label>Divisi</label>
-            <select id="bDivisi">
+            <select id="bDivisi" onchange="filterNamesByDivision()">
                 <option value="">-- Memuat Data --</option>
             </select>
         </div>
@@ -145,7 +145,7 @@
         <div class="form-group">
             <label>Nama Pemesan</label>
             <select id="bName">
-                <option value="">-- Memuat Data --</option>
+                <option value="">-- Pilih Divisi Dulu --</option>
             </select>
         </div>
 
@@ -231,6 +231,10 @@
     const ADMIN_WA = '62881081371012'; 
 
     let bookings = [];
+    
+    // Variabel baru untuk menyimpan daftar karyawan secara terstruktur
+    let employeesData = []; 
+
     const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
     const today = new Date();
     let currentMonth = today.getMonth();
@@ -269,12 +273,28 @@
             
             if (Array.isArray(data)) {
                 bookings = data;
-                renderOptions('bName', ['-- Harap perbarui Google Script --']);
                 renderOptions('bDivisi', ['-- Harap perbarui Google Script --']);
             } else {
                 bookings = data.bookings || [];
-                renderOptions('bName', data.names || []);
-                renderOptions('bDivisi', data.divisions || []);
+                
+                // Susun data agar Divisi dan Nama saling terhubung (berdasarkan urutan baris di Google Sheet)
+                employeesData = [];
+                const rawNames = data.names || [];
+                const rawDivisions = data.divisions || [];
+                
+                // Menggabungkan array berdasar urutan baris
+                for(let i = 0; i < Math.max(rawNames.length, rawDivisions.length); i++) {
+                    if(rawNames[i] && rawDivisions[i]) {
+                        employeesData.push({
+                            name: rawNames[i],
+                            division: rawDivisions[i]
+                        });
+                    }
+                }
+                
+                // Ambil Divisi yang Unik (agar tidak ada divisi ganda di dropdown)
+                const uniqueDivisions = [...new Set(employeesData.map(e => e.division))];
+                renderOptions('bDivisi', uniqueDivisions);
             }
             
             renderCalendar();
@@ -290,6 +310,29 @@
         items.forEach(item => {
             if(item) select.innerHTML += `<option value="${item}">${item}</option>`;
         });
+    }
+
+    // FUNGSI BARU: Untuk memfilter dropdown Nama berdasarkan Divisi yang dipilih
+    function filterNamesByDivision() {
+        const selectedDivision = document.getElementById('bDivisi').value;
+        const nameDropdown = document.getElementById('bName');
+        
+        // Reset dropdown nama
+        nameDropdown.innerHTML = `<option value="">-- Pilih Nama --</option>`;
+        
+        if(selectedDivision) {
+            // Filter nama yang divisinya cocok dengan yang dipilih
+            const filteredNames = employeesData
+                                  .filter(e => e.division === selectedDivision)
+                                  .map(e => e.name);
+            
+            // Masukkan nama yang sudah difilter ke dropdown
+            filteredNames.forEach(name => {
+                nameDropdown.innerHTML += `<option value="${name}">${name}</option>`;
+            });
+        } else {
+            nameDropdown.innerHTML = `<option value="">-- Pilih Divisi Dulu --</option>`;
+        }
     }
 
     function getRoomClass(roomName) {
@@ -395,8 +438,12 @@
 
     function openBookingModal() {
         document.getElementById('bDate').value = ''; 
-        document.getElementById('bName').value = '';
         document.getElementById('bDivisi').value = '';
+        
+        // Reset dropdown nama saat membuka form baru
+        const nameDropdown = document.getElementById('bName');
+        nameDropdown.innerHTML = `<option value="">-- Pilih Divisi Dulu --</option>`;
+        
         document.getElementById('bStart').value = '';
         document.getElementById('bEnd').value = '';
         document.getElementById('bookingModal').style.display = 'flex';
@@ -411,7 +458,7 @@
         const end = document.getElementById('bEnd').value;
 
         if(!namaInput || !divisiInput || !date || !start || !end) {
-            alert("Mohon lengkapi semua data (Nama, Divisi, Tanggal, Jam)!");
+            alert("Mohon lengkapi semua data (Divisi, Nama, Tanggal, Jam)!");
             return;
         }
 
@@ -438,7 +485,7 @@
             // Proses simpan permanen ke database
             await fetch(SCRIPT_URL, {
                 method: 'POST',
-                redirect: 'follow', // BARIS PENTING AGAR DATA TERSIMPAN
+                redirect: 'follow', 
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify({ action: "save", booking: newBooking })
             });
@@ -483,7 +530,7 @@
                 // Proses hapus permanen di database
                 await fetch(SCRIPT_URL, {
                     method: 'POST',
-                    redirect: 'follow', // BARIS PENTING AGAR DATA TERHAPUS
+                    redirect: 'follow', 
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify({ action: "delete", id: id })
                 });
