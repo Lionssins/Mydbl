@@ -212,7 +212,7 @@
         // -------------------------------------------------------------
         // WAJIB GANTI LINK DI BAWAH INI DENGAN LINK DEPLOYMENT ANDA !
         // -------------------------------------------------------------
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzGPQiAkDui5wYifhH3dfcJ9IrZIRcEWxrkXSpKww8hZX3yyoIK9L6wHEHVcIXykBopOA/exec'; 
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw0GXi0v8m7pRe13LiRslCybXVUA6Oxt8R2fyMT58bYoHh10CarAtFuAhUrH6E7-azdcQ/exec'; 
         const ADMIN_WA = '62881081371012'; 
 
         let Peminjamans = [];
@@ -557,4 +557,92 @@
         function showAdminLogin() { document.getElementById('adminModal').style.display = 'flex'; }
         
         function processAdminLogin() {
-            if
+            if(document.getElementById('admUser').value === 'Admin' && document.getElementById('admPass').value === 'AdminGA') {
+                closeModal('adminModal');
+                document.getElementById('admUser').value = '';
+                document.getElementById('admPass').value = '';
+                document.getElementById('adminDashboard').style.display = 'flex';
+                renderAdminTable();
+            } else { 
+                alert("Username atau Password Salah!"); 
+            }
+        }
+
+        function renderAdminTable() {
+            const tbody = document.getElementById('adminTableBody');
+            tbody.innerHTML = '';
+            
+            if(Peminjamans.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center p-4 text-gray-500">Tidak ada data Peminjaman</td></tr>`;
+                return;
+            }
+
+            [...Peminjamans].sort((a,b) => b.date.localeCompare(a.date)).forEach(b => {
+                let waCell = b.phone ? `<a href="https://wa.me/${formatPhoneForWA(b.phone)}" target="_blank" class="text-green-600 hover:underline"><i class="fab fa-whatsapp"></i> ${b.phone}</a>` : '-';
+                tbody.innerHTML += `
+                <tr class="hover:bg-gray-50 transition">
+                    <td class="p-3 border-b text-gray-800">${b.date}</td>
+                    <td class="p-3 border-b text-gray-800">${b.start} - ${b.end}</td>
+                    <td class="p-3 border-b"><span class="${getRoomClass(b.room)} px-2 py-1 rounded text-xs whitespace-nowrap">${b.room}</span></td>
+                    <td class="p-3 border-b text-gray-800">${b.name}</td>
+                    <td class="p-3 border-b text-gray-800">${waCell}</td>
+                    <td class="p-3 border-b text-center">
+                        <button onclick="deletePeminjaman(this, '${b.id}')" class="bg-red-100 text-red-600 hover:bg-red-600 hover:text-white p-2 rounded transition shadow-sm" title="Hapus Jadwal">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </td>
+                </tr>`;
+            });
+        }
+
+        async function deletePeminjaman(btnElement, id) {
+            if(confirm("Apakah Anda yakin ingin menghapus jadwal ini?")) {
+                btnElement.innerHTML = `<i class="fas fa-spinner fa-spin"></i>`;
+                btnElement.disabled = true;
+
+                try {
+                    const response = await fetch(SCRIPT_URL, {
+                        method: 'POST',
+                        redirect: 'follow', 
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({ action: "delete", id: id })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if(result.status === 'success') {
+                        Peminjamans = Peminjamans.filter(b => b.id != id);
+                        renderAdminTable();
+                        renderCalendar();
+                    } else {
+                        alert("Gagal menghapus: " + result.message);
+                    }
+                } catch (e) { 
+                    alert("Terjadi kegagalan jaringan saat menghapus.");
+                    console.error("Gagal hapus di database:", e); 
+                }
+            }
+        }
+
+        function downloadSpreadsheet() {
+            let csv = "Tanggal,Mulai,Selesai,Ruangan,Pemesan,No WhatsApp\n";
+            Peminjamans.forEach(b => { 
+                let phoneSafe = b.phone ? b.phone.toString() : "";
+                csv += `${b.date},${b.start},${b.end},${b.room},${b.name.replace(/,/g, '')},${phoneSafe}\n`; 
+            });
+            const link = document.createElement("a");
+            link.href = 'data:text/csv;charset=utf-8,' + encodeURI(csv);
+            link.download = "jadwal_ruangan.csv";
+            link.click();
+        }
+
+        window.closeModal = function(id) { document.getElementById(id).style.display = 'none'; }
+        
+        window.onclick = function(event) {
+            if (event.target.classList.contains('fixed') && event.target.style.display !== 'none') {
+                event.target.style.display = "none";
+            }
+        }
+    </script>
+</body>
+</html>
