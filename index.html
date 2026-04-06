@@ -45,7 +45,7 @@
             
             <div class="bg-white p-6 rounded-xl shadow-md">
                 <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
-                    <h2 class="text-2xl font-bold text-gray-700">Jadwal Ruangan</h2>
+                    <h2 class="text-2xl font-bold text-gray-700">Jadwal Ketersediaan</h2>
                     <div class="flex gap-2">
                         <select id="yearSelect" class="border rounded p-2 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none" onchange="renderCalendar()"></select>
                         <select id="monthSelect" class="border rounded p-2 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none" onchange="renderCalendar()">
@@ -128,7 +128,7 @@
         <div class="lg:col-span-1">
             <div class="bg-white p-4 rounded-xl shadow-md sticky top-24 h-[85vh] flex flex-col">
                 <h3 class="text-lg font-bold border-b pb-2 mb-2 flex justify-between items-center text-gray-800">
-                    <span><i class="fas fa-list-ul text-blue-500 mr-2"></i>Jadwal Bulan Ini</span>
+                    <span><i class="fas fa-list-ul text-blue-500 mr-2"></i>Jadwal Peminjaman</span>
                     <span class="text-xs bg-gray-200 px-2 py-1 rounded-full text-gray-600" id="totalBookings">0</span>
                 </h3>
                 <div id="bookingList" class="flex-1 overflow-y-auto space-y-3 pr-2 mt-2">
@@ -178,7 +178,7 @@
                 <button onclick="closeModal('adminDashboard')" class="text-white hover:text-red-300 font-bold text-2xl leading-none">&times;</button>
             </div>
             <div class="p-4 bg-gray-50 border-b flex justify-between items-center">
-                <span class="text-sm text-gray-600 font-medium">Manajemen Jadwal Ruangan</span>
+                <span class="text-sm text-gray-600 font-medium">Manajemen Jadwal Ketersediaan</span>
                 <button onclick="downloadSpreadsheet()" class="bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow flex items-center gap-2">
                     <i class="fas fa-file-csv"></i> Download CSV
                 </button>
@@ -430,7 +430,7 @@
             totalSpan.innerText = monthlyBookings.length;
 
             if(monthlyBookings.length === 0) {
-                list.innerHTML = '<div class="text-center text-gray-400 mt-10">Tidak ada jadwal bulan ini.</div>';
+                list.innerHTML = '<div class="text-center text-gray-400 mt-10">Tidak ada Jadwal Peminjaman.</div>';
                 return;
             }
 
