@@ -271,7 +271,6 @@
                 if (Array.isArray(data)) {
                     rawPeminjamans = data;
                 } else {
-                    // PERBAIKAN 1: JSON dari Google Script menggunakan kunci 'bookings' bukan 'Peminjamans'
                     rawPeminjamans = data.bookings || [];
                     employeesData = [];
                     const rawNames = data.names || [];
@@ -308,7 +307,8 @@
                     } else if (typeof formattedEnd === 'string' && formattedEnd.length <= 5) {
                         if(formattedEnd.length === 4) formattedEnd = '0' + formattedEnd;
                     }
-                    return { ...b, date: formattedDate, start: formattedStart, end: formattedEnd };
+                    // Pastikan phone diambil dan disatukan
+                    return { ...b, date: formattedDate, start: formattedStart, end: formattedEnd, phone: b.phone || '' };
                 });
                 
                 renderCalendar();
@@ -524,7 +524,6 @@
                     method: 'POST',
                     redirect: 'follow', 
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    // PERBAIKAN 2: Server Google membaca properti bernama 'booking', bukan 'Peminjaman'
                     body: JSON.stringify({ action: "save", booking: newPeminjaman })
                 });
 
