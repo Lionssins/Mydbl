@@ -271,7 +271,8 @@
                 if (Array.isArray(data)) {
                     rawPeminjamans = data;
                 } else {
-                    rawPeminjamans = data.Peminjamans || [];
+                    // PERBAIKAN 1: JSON dari Google Script menggunakan kunci 'bookings' bukan 'Peminjamans'
+                    rawPeminjamans = data.bookings || [];
                     employeesData = [];
                     const rawNames = data.names || [];
                     const rawDivisions = data.divisions || [];
@@ -395,7 +396,6 @@
         }
 
         function viewDaySchedule(dateStr) {
-            // Otomatis isi tanggal ke form saat kalender di-klik
             document.getElementById('bDate').value = dateStr;
 
             const modalTitle = document.getElementById('viewDayTitle');
@@ -413,7 +413,7 @@
                 content.innerHTML = `
                     <div class="text-center text-gray-400 py-10 flex flex-col items-center">
                         <i class="far fa-calendar-check text-4xl mb-3 text-gray-300"></i>
-                        <p>Belum ada ruangan yang diPeminjaman pada tanggal ini.</p>
+                        <p>Belum ada ruangan yang dipinjam pada tanggal ini.</p>
                         <p class="text-xs mt-2 text-blue-500">Klik 'Peminjaman di Tanggal Ini' untuk memesan.</p>
                     </div>`;
             } else {
@@ -440,7 +440,6 @@
         function scrollToFormFromModal() {
             closeModal('viewDayModal');
             document.getElementById('formSection').scrollIntoView({ behavior: 'smooth' });
-            // Fokus otomatis ke input divisi untuk mempercepat
             setTimeout(() => { document.getElementById('bDivisi').focus(); }, 500);
         }
 
@@ -508,7 +507,7 @@
             );
 
             if(clash) {
-                alert(`Gagal! ${room} sudah diPeminjaman pada jam tersebut oleh ${clash.name}`);
+                alert(`Gagal! ${room} sudah dipinjam pada jam tersebut oleh ${clash.name}`);
                 return;
             }
 
@@ -517,7 +516,6 @@
 
             const newPeminjaman = { id: Date.now().toString(), name, room, date, start, end, phone };
             
-            // Push ke visual lokal sementara proses berjalan
             Peminjamans.push(newPeminjaman);
             renderCalendar();
 
@@ -526,7 +524,8 @@
                     method: 'POST',
                     redirect: 'follow', 
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action: "save", Peminjaman: newPeminjaman })
+                    // PERBAIKAN 2: Server Google membaca properti bernama 'booking', bukan 'Peminjaman'
+                    body: JSON.stringify({ action: "save", booking: newPeminjaman })
                 });
 
                 const result = await response.json();
